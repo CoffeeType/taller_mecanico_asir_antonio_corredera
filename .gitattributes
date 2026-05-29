@@ -1,0 +1,2 @@
+# Shell scripts: LF for Linux runtimes (avoids broken shebang from CRLF on Windows)
+*.sh text eol=lf

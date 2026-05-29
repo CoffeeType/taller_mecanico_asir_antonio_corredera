@@ -1,0 +1,349 @@
+# Stack orientado a EC2 + Docker Compose en AWS.
+# - Sin bind-mount del codigo completo (imagen build ./).
+# - MySQL y exporters NO expuestos al host; solo red Docker interna.
+# - UIs de monitorizacion y simulador publicas por defecto (MONITORING_UI_HOST_BIND=0.0.0.0).
+# - Exporters tecnicos en loopback por defecto (EXPORTER_HOST_BIND=127.0.0.1).
+#
+# Uso: docker compose -f docker-compose.aws.yml --env-file .env --profile monitoring --profile traffic up -d
+# O export COMPOSE_PROFILES=monitoring,traffic
+# Ver docs/AWS_DOCKER_DEPLOYMENT.md
+
+services:
+  web:
+    build: .
+    cpus: "${WEB_CPUS:-0.75}"
+    mem_limit: "${WEB_MEM_LIMIT:-512m}"
+    memswap_limit: "${WEB_MEMSWAP_LIMIT:-768m}"
+    ports:
+      - "${WEB_HOST_PORT:-80}:80"
+    volumes:
+      - app_images:/var/www/html/assets/images
+      - app_logs:/var/www/html/logs
+      - app_cache:/var/www/html/cache
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-trabajo_final_php}
+      - DB_USER=${MYSQL_USER:-app_user}
+      - DB_PASS=${MYSQL_PASSWORD:-app_password}
+      - APP_ENV=${APP_ENV:-production}
+      - APP_DEBUG=${APP_DEBUG:-false}
+      # URLs publicas (deploy_aws_docker.sh + metadata EC2): enlaces admin / test alert email
+      - PROMETHEUS_EXTERNAL_URL=${PROMETHEUS_EXTERNAL_URL:-}
+      - ALERTMANAGER_EXTERNAL_URL=${ALERTMANAGER_EXTERNAL_URL:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mysql:
+    image: mysql:8.0
+    cpus: "${MYSQL_CPUS:-0.75}"
+    mem_limit: "${MYSQL_MEM_LIMIT:-768m}"
+    memswap_limit: "${MYSQL_MEMSWAP_LIMIT:-1024m}"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-trabajo_final_php}
+      - MYSQL_USER=${MYSQL_USER:-app_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-app_password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/database.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+
+  prometheus:
+    image: prom/prometheus:v3.11.3
+    profiles:
+      - monitoring
+    cpus: "${PROMETHEUS_CPUS:-0.35}"
+    mem_limit: "${PROMETHEUS_MEM_LIMIT:-384m}"
+    memswap_limit: "${PROMETHEUS_MEMSWAP_LIMIT:-512m}"
+    volumes:
+      - ./monitoring/prometheus/prometheus.aws.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}"
+      - "--storage.tsdb.retention.size=${PROMETHEUS_RETENTION_SIZE:-512MB}"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+    restart: unless-stopped
+    depends_on:
+      - alertmanager
+      - blackbox-exporter
+    networks:
+      - app-network
+    ports:
+      - "${MONITORING_UI_HOST_BIND:-0.0.0.0}:${PROMETHEUS_HOST_PORT:-9090}:9090"
+
+  alertmanager:
+    image: prom/alertmanager:v0.32.1
+    profiles:
+      - monitoring
+    cpus: "${ALERTMANAGER_CPUS:-0.15}"
+    mem_limit: "${ALERTMANAGER_MEM_LIMIT:-128m}"
+    memswap_limit: "${ALERTMANAGER_MEMSWAP_LIMIT:-192m}"
+    volumes:
+      # Must match path expected by alertmanager-entrypoint.sh (`/etc/alertmanager/config/alertmanager.yml`)
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/config/alertmanager.yml:ro
+      - ./monitoring/alertmanager/alertmanager-entrypoint.sh:/entrypoint.sh:ro
+      - alertmanager_data:/alertmanager
+    environment:
+      - ALERT_EMAIL_TO=${ALERT_EMAIL_TO:-}
+      - SMTP_SMARTHOST=${SMTP_SMARTHOST:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+      - SMTP_AUTH_USERNAME=${SMTP_AUTH_USERNAME:-}
+      - SMTP_AUTH_PASSWORD=${SMTP_AUTH_PASSWORD:-}
+      - SMTP_REQUIRE_TLS=${SMTP_REQUIRE_TLS:-true}
+      - ALERTMANAGER_EXTERNAL_URL=${ALERTMANAGER_EXTERNAL_URL:-}
+      - ALERTMANAGER_ROUTE_PREFIX=${ALERTMANAGER_ROUTE_PREFIX:-/}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "sed 's/\\r$//' /entrypoint.sh > /tmp/entrypoint.sh && chmod +x /tmp/entrypoint.sh && /tmp/entrypoint.sh"
+    restart: unless-stopped
+    networks:
+      - app-network
+    ports:
+      - "${MONITORING_UI_HOST_BIND:-0.0.0.0}:${ALERTMANAGER_HOST_PORT:-9093}:9093"
+
+  grafana:
+    image: grafana/grafana:13.0.1
+    profiles:
+      - monitoring
+    cpus: "${GRAFANA_CPUS:-0.35}"
+    mem_limit: "${GRAFANA_MEM_LIMIT:-384m}"
+    memswap_limit: "${GRAFANA_MEMSWAP_LIMIT:-512m}"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - app-network
+    ports:
+      - "${MONITORING_UI_HOST_BIND:-0.0.0.0}:${GRAFANA_HOST_PORT:-3000}:3000"
+
+  node-exporter:
+    image: prom/node-exporter:v1.11.1
+    profiles:
+      - monitoring
+    cpus: "${NODE_EXPORTER_CPUS:-0.10}"
+    mem_limit: "${NODE_EXPORTER_MEM_LIMIT:-96m}"
+    memswap_limit: "${NODE_EXPORTER_MEMSWAP_LIMIT:-128m}"
+    restart: unless-stopped
+    networks:
+      - app-network
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.19.0
+    profiles:
+      - monitoring
+    cpus: "${MYSQLD_EXPORTER_CPUS:-0.15}"
+    mem_limit: "${MYSQLD_EXPORTER_MEM_LIMIT:-128m}"
+    memswap_limit: "${MYSQLD_EXPORTER_MEMSWAP_LIMIT:-192m}"
+    environment:
+      - MYSQL_HOST=${MYSQL_HOST:-mysql}
+      - MYSQL_PORT=${MYSQL_PORT:-3306}
+      - MYSQL_USER=${MYSQL_USER:-app_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-app_password}
+    volumes:
+      - ./monitoring/mysqld_exporter/entrypoint.sh:/entrypoint.sh:ro
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "sed 's/\\r$//' /entrypoint.sh > /tmp/entrypoint.sh && chmod +x /tmp/entrypoint.sh && /bin/sh /tmp/entrypoint.sh"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.26.0
+    profiles:
+      - monitoring
+    cpus: "${BLACKBOX_EXPORTER_CPUS:-0.10}"
+    mem_limit: "${BLACKBOX_EXPORTER_MEM_LIMIT:-96m}"
+    memswap_limit: "${BLACKBOX_EXPORTER_MEMSWAP_LIMIT:-128m}"
+    command:
+      - '--config.file=/config/blackbox.yml'
+    volumes:
+      - ./monitoring/prometheus/blackbox.yml:/config/blackbox.yml:ro
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  cadvisor:
+    # Upstream Quick Start: ghcr.io/google/cadvisor:$VERSION (semver sin prefijo v). < v0.53: gcr.io/cadvisor/cadvisor
+    # https://github.com/google/cadvisor#quick-start-running-cadvisor-in-a-docker-container
+    image: ghcr.io/google/cadvisor:${CADVISOR_IMAGE_TAG:-0.56.2}
+    profiles:
+      - monitoring
+    cpus: "${CADVISOR_CPUS:-0.15}"
+    mem_limit: "${CADVISOR_MEM_LIMIT:-256m}"
+    memswap_limit: "${CADVISOR_MEMSWAP_LIMIT:-384m}"
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    command:
+      - "--docker_only=true"
+      - "--housekeeping_interval=30s"
+    restart: unless-stopped
+    networks:
+      - app-network
+    ports:
+      - "${EXPORTER_HOST_BIND:-127.0.0.1}:${CADVISOR_HOST_PORT:-8080}:8080"
+
+  telegraf:
+    image: telegraf:latest
+    profiles:
+      - monitoring
+    cpus: "${TELEGRAF_CPUS:-0.15}"
+    mem_limit: "${TELEGRAF_MEM_LIMIT:-256m}"
+    memswap_limit: "${TELEGRAF_MEMSWAP_LIMIT:-384m}"
+    user: "0:0"
+    privileged: true
+    entrypoint: ["telegraf"]
+    command: ["--config", "/etc/telegraf/telegraf.conf"]
+    environment:
+      - DOCKER_API_VERSION=1.41
+    volumes:
+      - ./monitoring/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    networks:
+      - app-network
+    ports:
+      - "${EXPORTER_HOST_BIND:-127.0.0.1}:${TELEGRAF_HOST_PORT:-9273}:9273"
+
+  traffic-simulator:
+    build:
+      context: .
+      dockerfile: docker/traffic-simulator/Dockerfile
+      args:
+        JMETER_VERSION: ${JMETER_VERSION:-5.6.3}
+    profiles:
+      - traffic
+    cpus: "${TRAFFIC_SIMULATOR_CPUS:-0.35}"
+    mem_limit: "${TRAFFIC_SIMULATOR_MEM_LIMIT:-512m}"
+    memswap_limit: "${TRAFFIC_SIMULATOR_MEMSWAP_LIMIT:-768m}"
+    environment:
+      - SIM_BASE_URL=${SIM_BASE_URL:-http://web}
+      - SIM_LOG_DIR=/var/www/html/logs
+      - SIMULATOR_CONTROL_TOKEN=${SIMULATOR_CONTROL_TOKEN:-changeme_traffic_sim_secret}
+      - SIMULATOR_CONTROL_PORT=8085
+      - SIM_ROUTES_FILE=${SIM_ROUTES_FILE:-}
+      - SIM_JMETER_BIN=${SIM_JMETER_BIN:-/opt/apache-jmeter/bin/jmeter}
+      - SIM_JMETER_WORK_DIR=${SIM_JMETER_WORK_DIR:-/var/www/html/logs/jmeter}
+      - SIM_JMETER_HEAP=${SIM_JMETER_HEAP:--Xms128m -Xmx256m -XX:MaxMetaspaceSize=128m}
+      - SIM_JMETER_HTML_REPORT=${SIM_JMETER_HTML_REPORT:-true}
+      - SIM_EXTERNAL_TARGETS_ENABLED=${SIM_EXTERNAL_TARGETS_ENABLED:-true}
+      - SIM_REQUIRE_EXTERNAL_CONFIRMATION=${SIM_REQUIRE_EXTERNAL_CONFIRMATION:-true}
+      - SIM_INTERNAL_HOSTS=${SIM_INTERNAL_HOSTS:-web,localhost,127.0.0.1,::1,mysql,host.docker.internal}
+      - SIM_ALLOW_PRIVATE_TARGETS=${SIM_ALLOW_PRIVATE_TARGETS:-false}
+      - SIM_SSL_VERIFY=${SIM_SSL_VERIFY:-true}
+    volumes:
+      - app_logs:/var/www/html/logs
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:8085/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  traffic-simulator-ui:
+    build:
+      context: .
+      dockerfile: docker/traffic-simulator-ui/Dockerfile
+    profiles:
+      - traffic
+    cpus: "${TRAFFIC_SIMULATOR_UI_CPUS:-0.10}"
+    mem_limit: "${TRAFFIC_SIMULATOR_UI_MEM_LIMIT:-128m}"
+    memswap_limit: "${TRAFFIC_SIMULATOR_UI_MEMSWAP_LIMIT:-192m}"
+    # Puerto host: TRAFFIC_SIMULATOR_UI_HOST_PORT (en docker-compose.yml local es TRAFFIC_SIMULATOR_UI_PORT).
+    ports:
+      - "${MONITORING_UI_HOST_BIND:-0.0.0.0}:${TRAFFIC_SIMULATOR_UI_HOST_PORT:-8890}:80"
+    environment:
+      - SIMULATOR_CONTAINER_URL=http://traffic-simulator:8085
+      - SIMULATOR_CONTROL_TOKEN=${SIMULATOR_CONTROL_TOKEN:-changeme_traffic_sim_secret}
+      - SIM_LOG_DIR=/var/www/html/logs
+      - SIM_UI_DEFAULT_BASE_URL=${SIM_UI_DEFAULT_BASE_URL:-http://web}
+      - SIM_UI_PUBLIC_APP_URL=${SIM_UI_PUBLIC_APP_URL:-}
+      - PROMETHEUS_EXTERNAL_URL=${PROMETHEUS_EXTERNAL_URL:-http://127.0.0.1:9090}
+      - GRAFANA_EXTERNAL_URL=${GRAFANA_EXTERNAL_URL:-http://127.0.0.1:3000}
+      - TZ=${TZ:-UTC}
+      - SIM_EXTERNAL_TARGETS_ENABLED=${SIM_EXTERNAL_TARGETS_ENABLED:-true}
+      - SIM_REQUIRE_EXTERNAL_CONFIRMATION=${SIM_REQUIRE_EXTERNAL_CONFIRMATION:-true}
+      - SIM_INTERNAL_HOSTS=${SIM_INTERNAL_HOSTS:-web,localhost,127.0.0.1,::1,mysql,host.docker.internal}
+      - SIM_ALLOW_PRIVATE_TARGETS=${SIM_ALLOW_PRIVATE_TARGETS:-false}
+      - SIM_SSL_VERIFY=${SIM_SSL_VERIFY:-true}
+    volumes:
+      - app_logs:/var/www/html/logs
+    networks:
+      - app-network
+    depends_on:
+      traffic-simulator:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/health.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  mysql_data:
+  prometheus_data:
+  grafana_data:
+  alertmanager_data:
+  app_images:
+  app_logs:
+  app_cache:
+
+networks:
+  app-network:
+    driver: bridge

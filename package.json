@@ -1,0 +1,22 @@
+{
+    "name": "motor-news-scraper",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "scrape": "node scripts/scrape_motor_news.js",
+        "defense:html": "python tools/generate_defense_html.py",
+        "defense:export-pptx": "python tools/export_defense_html_to_pptx.py",
+        "defense:notes": "python tools/attach_defense_speaker_notes.py",
+        "defense:golden": "python tools/screenshot_all_slides.py --export",
+        "defense:qa": "python tools/compare_slide_pngs.py"
+    },
+    "dependencies": {
+        "axios": "^1.6.0",
+        "mysql2": "^3.15.3",
+        "xml2js": "^0.6.2"
+    },
+    "devDependencies": {
+        "dom-to-pptx": "^1.1.9",
+        "playwright": "^1.60.0"
+    }
+}
