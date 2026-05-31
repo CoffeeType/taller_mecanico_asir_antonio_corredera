@@ -7,6 +7,7 @@ declare(strict_types=1);
 header('Content-Type: application/json');
 
 require_once '/opt/inc/traffic_simulator_lib.php';
+require_once __DIR__ . '/lib/monitoring_urls.php';
 
 $controlBase = rtrim(getenv('SIMULATOR_CONTAINER_URL') ?: 'http://traffic-simulator:8085', '/');
 $token       = getenv('SIMULATOR_CONTROL_TOKEN') ?: '';
@@ -241,10 +242,7 @@ function simulator_ui_status_payload(
         'default_base_url' => $defaultBase,
         'public_app_url'   => $publicApp,
         'planned_requests' => traffic_simulator_planned_requests($baseForPlan, $routesFile),
-        'monitoring'       => [
-            'prometheus' => getenv('PROMETHEUS_EXTERNAL_URL') ?: '',
-            'grafana'    => getenv('GRAFANA_EXTERNAL_URL') ?: '',
-        ],
+        'monitoring'       => traffic_simulator_monitoring_external_urls(),
         'diagnostics'      => simulator_ui_logs_diagnostics($logsDir, $metricsLog),
         'worker_detail'    => $workerDetail,
         'jmeter'           => simulator_ui_jmeter_links($logsDir, $workerDetail),

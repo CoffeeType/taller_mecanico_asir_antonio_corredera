@@ -1,5 +1,8 @@
 version: '3.8'
 
+include:
+  - path: compose/traffic-services.yml
+
 services:
   # Aplicación PHP con Apache
   web:
@@ -31,80 +34,20 @@ services:
       retries: 3
       start_period: 40s
 
-  # Simulador de tráfico aislado (Apache JMeter + API de control HTTP). Requiere: docker compose --profile traffic up -d
+  # Simulador JMeter: definición compartida en compose/traffic-services.yml (perfil traffic).
   traffic-simulator:
-    build:
-      context: .
-      dockerfile: docker/traffic-simulator/Dockerfile
-      args:
-        JMETER_VERSION: ${JMETER_VERSION:-5.6.3}
     container_name: taller_mecanico_traffic_simulator
-    profiles:
-      - traffic
-    environment:
-      - SIM_BASE_URL=${SIM_BASE_URL:-http://web}
-      - SIM_LOG_DIR=/var/www/html/logs
-      - SIMULATOR_CONTROL_TOKEN=${SIMULATOR_CONTROL_TOKEN:-changeme_traffic_sim_secret}
-      - SIMULATOR_CONTROL_PORT=8085
-      - SIM_ROUTES_FILE=${SIM_ROUTES_FILE:-}
-      - SIM_JMETER_BIN=${SIM_JMETER_BIN:-/opt/apache-jmeter/bin/jmeter}
-      - SIM_JMETER_WORK_DIR=${SIM_JMETER_WORK_DIR:-/var/www/html/logs/jmeter}
-      - SIM_JMETER_HEAP=${SIM_JMETER_HEAP:--Xms128m -Xmx256m -XX:MaxMetaspaceSize=128m}
-      - SIM_JMETER_HTML_REPORT=${SIM_JMETER_HTML_REPORT:-true}
-      - SIM_EXTERNAL_TARGETS_ENABLED=${SIM_EXTERNAL_TARGETS_ENABLED:-true}
-      - SIM_REQUIRE_EXTERNAL_CONFIRMATION=${SIM_REQUIRE_EXTERNAL_CONFIRMATION:-true}
-      - SIM_INTERNAL_HOSTS=${SIM_INTERNAL_HOSTS:-web,localhost,127.0.0.1,::1,mysql,taller_mecanico_web,host.docker.internal}
-      - SIM_ALLOW_PRIVATE_TARGETS=${SIM_ALLOW_PRIVATE_TARGETS:-false}
-      - SIM_SSL_VERIFY=${SIM_SSL_VERIFY:-true}
     volumes:
       - ./logs:/var/www/html/logs
-    networks:
-      - app-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:8085/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
 
   traffic-simulator-ui:
-    build:
-      context: .
-      dockerfile: docker/traffic-simulator-ui/Dockerfile
     container_name: taller_mecanico_traffic_simulator_ui
-    profiles:
-      - traffic
-    ports:
-      - "${TRAFFIC_SIMULATOR_UI_PORT:-8890}:80"
     environment:
-      - SIMULATOR_CONTAINER_URL=http://traffic-simulator:8085
-      - SIMULATOR_CONTROL_TOKEN=${SIMULATOR_CONTROL_TOKEN:-changeme_traffic_sim_secret}
-      - SIM_LOG_DIR=/var/www/html/logs
-      - SIM_UI_DEFAULT_BASE_URL=${SIM_UI_DEFAULT_BASE_URL:-http://web}
-      - SIM_UI_PUBLIC_APP_URL=${SIM_UI_PUBLIC_APP_URL:-}
       - PROMETHEUS_EXTERNAL_URL=${PROMETHEUS_EXTERNAL_URL:-http://localhost:9090}
       - GRAFANA_EXTERNAL_URL=${GRAFANA_EXTERNAL_URL:-http://localhost:3000}
-      - TZ=${TZ:-UTC}
-      - SIM_EXTERNAL_TARGETS_ENABLED=${SIM_EXTERNAL_TARGETS_ENABLED:-true}
-      - SIM_REQUIRE_EXTERNAL_CONFIRMATION=${SIM_REQUIRE_EXTERNAL_CONFIRMATION:-true}
-      - SIM_INTERNAL_HOSTS=${SIM_INTERNAL_HOSTS:-web,localhost,127.0.0.1,::1,mysql,taller_mecanico_web,host.docker.internal}
-      - SIM_ALLOW_PRIVATE_TARGETS=${SIM_ALLOW_PRIVATE_TARGETS:-false}
-      - SIM_SSL_VERIFY=${SIM_SSL_VERIFY:-true}
+      - ALERTMANAGER_EXTERNAL_URL=${ALERTMANAGER_EXTERNAL_URL:-http://localhost:9093}
     volumes:
       - ./logs:/var/www/html/logs
-    networks:
-      - app-network
-    depends_on:
-      traffic-simulator:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/health.php"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
 
   # Base de datos MySQL
   mysql:

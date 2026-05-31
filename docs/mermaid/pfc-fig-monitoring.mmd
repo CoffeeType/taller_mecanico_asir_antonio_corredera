@@ -1,0 +1,11 @@
+flowchart LR
+  web["Apache + PHP\nmetrics.php"]
+  exp["Exportadores\nNode / MySQL / blackbox"]
+  prom["Prometheus"]
+  graf["Grafana"]
+  am["Alertmanager"]
+
+  web --> prom
+  exp --> prom
+  prom --> graf
+  prom --> am

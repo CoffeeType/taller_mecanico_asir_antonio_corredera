@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph stack["Docker Compose — red interna"]
+        web["web<br/>Apache + PHP"]
+        mysql[("mysql<br/>persistencia")]
+        prom["prometheus"]
+        am["alertmanager"]
+        graf["grafana"]
+        exp["exportadores"]
+        sim["simulador<br/>perfil traffic"]
+    end
+
+    web --> mysql
+    prom --> web
+    prom --> exp
+    prom --> graf
+    prom --> am
+    sim --> web

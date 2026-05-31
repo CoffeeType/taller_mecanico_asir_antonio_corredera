@@ -176,8 +176,31 @@ docker compose up -d alertmanager prometheus
 
 ### Enviar un email de prueba (desde Grafana)
 
-- En **despliegue AWS** con [`scripts/deploy_aws_docker.sh`](../scripts/deploy_aws_docker.sh), el script actualiza en disco los valores por defecto del dashboard **App PHP (URL base)** y **Prometheus (URL base)** según metadata EC2 / `PUBLIC_ACCESS_HOST` y `WEB_HOST_PORT`, para que no tengas que editarlos a mano en Grafana (el fichero se reescribe en `monitoring/grafana/dashboards/`; Grafana los recarga por provisioning).
-- Entra en Grafana → Dashboard **Taller Mecánico - Dashboard Principal** → enlace **Test Email (Alertas)** → `${taller_app_base}/admin/test-alert-email.php`. Si no tienes sesión como **administrador**, la app te lleva al **login** y después al panel de prueba (ya no se redirige al índice público sin más).
+### Enlaces del dashboard (Grafana)
+
+En **despliegue AWS**, [`scripts/deploy_aws_docker.sh`](../scripts/deploy_aws_docker.sh) y [`tools/patch_grafana_public_urls.py`](../tools/patch_grafana_public_urls.py) actualizan en disco las URLs públicas del dashboard según metadata EC2 (**IPv4 pública primero**) o `PUBLIC_ACCESS_HOST`, y `WEB_HOST_PORT`. Grafana las recarga por provisioning (~10 s).
+
+**Layout del dashboard (leyenda y fila NOC):** la leyenda superior usa el datasource provisionado **TestData** (`uid: testdata` en [`monitoring/grafana/provisioning/datasources/prometheus.yml`](../monitoring/grafana/provisioning/datasources/prometheus.yml)) con un panel **Table** nativo. Los cambios de rejilla y tablas viven en [`monitoring/grafana/dashboards/taller-mecanico-dashboard.json`](../monitoring/grafana/dashboards/taller-mecanico-dashboard.json); para regenerarlos: `python tools/patch_grafana_noc_dashboard.py`. Tras desplegar en EC2, si la UI no refleja el JSON del repo, espera ~10 s o reinicia Grafana:
+
+```bash
+docker compose -f docker-compose.aws.yml restart grafana
+```
+
+Si alguien guardó el dashboard desde la UI (`allowUiUpdates: true`), usa **Dashboard → Restore** para volver al JSON provisionado.
+
+Enlaces en la barra del dashboard **Taller Mecánico - Dashboard Principal**:
+
+| Enlace | Destino |
+|--------|---------|
+| Prometheus | UI Prometheus (`:9090`) |
+| Alertmanager | UI Alertmanager (`:9093`) |
+| Test Email (Alertas) | `admin/test-alert-email.php` (requiere sesión **administrador**; si no, login) |
+| Simulador de tráfico | UI del simulador JMeter (`TRAFFIC_SIMULATOR_UI_HOST_PORT`, p. ej. `:8890`) |
+| Documentación | Guía en GitHub |
+
+En local, los valores por defecto usan `localhost` y los puertos de `docker-compose.yml`.
+
+- Entra en Grafana → Dashboard **Taller Mecánico - Dashboard Principal** → enlace **Test Email (Alertas)**. Si no tienes sesión como **administrador**, la app te lleva al **login** y después al panel de prueba (ya no se redirige al índice público sin más).
 
 ### Alertmanager: la UI no incluye «enviar email de prueba»
 

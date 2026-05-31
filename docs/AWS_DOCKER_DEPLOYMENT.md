@@ -119,7 +119,7 @@ Con el `.env.aws.example`, el despliegue deja las UIs accesibles por IP/DNS púb
 
 Variables EC2 relevantes (ver también la guía de usuario): `TRAFFIC_SIMULATOR_UI_HOST_PORT`, `TRAFFIC_SIMULATOR_UI_EXTERNAL_URL`, `SIMULATOR_CONTROL_TOKEN`, `SIM_UI_DEFAULT_BASE_URL`, `SIM_UI_PUBLIC_APP_URL` (preset app pública en la UI; la fijan deploy y bootstrap), `SIM_JMETER_HEAP`, `TRAFFIC_SIMULATOR_MEM_LIMIT`, `SKIP_TRAFFIC_SMOKE=1` (omitir smoke al desplegar), `MIN_TRAFFIC_STACK_MEM_MB` (preflight de memoria).
 
-**URL pública de Alertmanager (UI):** `deploy_aws_docker.sh` y [`ec2-user-data-bootstrap.sh`](../scripts/ec2-user-data-bootstrap.sh) escriben `ALERTMANAGER_EXTERNAL_URL=http://<host>:<ALERTMANAGER_HOST_PORT>` en `.env`, donde `<host>` es `PUBLIC_ACCESS_HOST` si lo defines, o el **public hostname / public IPv4** de la instancia vía metadata EC2. El contenedor pasa esa URL a Alertmanager como `--web.external-url` (en [`monitoring/alertmanager/alertmanager-entrypoint.sh`](../monitoring/alertmanager/alertmanager-entrypoint.sh)) para que enlaces y rutas de la UI coincidan con el acceso real. Si Alertmanager va detrás de un proxy con prefijo de ruta, define `ALERTMANAGER_ROUTE_PREFIX` (por defecto `/`).
+**URL pública de Alertmanager (UI):** `deploy_aws_docker.sh` y [`ec2-user-data-bootstrap.sh`](../scripts/ec2-user-data-bootstrap.sh) escriben `ALERTMANAGER_EXTERNAL_URL=http://<host>:<ALERTMANAGER_HOST_PORT>` en `.env`, donde `<host>` es `PUBLIC_ACCESS_HOST` si lo defines, o la **IPv4 pública** de la instancia vía metadata EC2 (y, si no hay IPv4, el public hostname). El contenedor pasa esa URL a Alertmanager como `--web.external-url` (en [`monitoring/alertmanager/alertmanager-entrypoint.sh`](../monitoring/alertmanager/alertmanager-entrypoint.sh)) para que enlaces y rutas de la UI coincidan con el acceso real. Si Alertmanager va detrás de un proxy con prefijo de ruta, define `ALERTMANAGER_ROUTE_PREFIX` (por defecto `/`).
 
 ## Despliegue manual en EC2
 
@@ -204,7 +204,7 @@ Comprueba al menos:
 - `DEPLOY_MONITORING=1` y `COMPOSE_PROFILES=monitoring,traffic` (**full stack** por defecto en `.env.aws.example`). Ajusta `MIN_MONITORING_MEM_MB` / `MIN_TRAFFIC_STACK_MEM_MB` o usa `FORCE_MONITORING_ON_LOW_MEM=1` / `ALLOW_DEGRADED_STACK=1` según memoria RAM+swap (recomendado **t3.medium+** o al menos ~4 GiB RAM+swap; el bootstrap crea 4 GiB de swap por defecto).
 - Para **solo** `web` + `mysql`: deja `COMPOSE_PROFILES` vacío y `DEPLOY_MONITORING=0`.
 - SMTP para Alertmanager si quieres correos (`SMTP_*`, `ALERT_EMAIL_TO`). Para Amazon SES puedes definir `SES_SMTP_REGION` y dejar `SMTP_SMARTHOST` vacío: los scripts rellenan `email-smtp.<region>.amazonaws.com:587`. Si **no** configuras correo todavía, deja `ALERT_EMAIL_TO` vacío: el entrypoint de Alertmanager usa una config **noop** válida hasta que completes SMTP.
-- URLs públicas de UIs (`PROMETHEUS_EXTERNAL_URL`, `GRAFANA_EXTERNAL_URL`, `ALERTMANAGER_EXTERNAL_URL`, `TRAFFIC_SIMULATOR_UI_EXTERNAL_URL`): el script de despliegue las actualiza con metadata EC2 si no fijas `PUBLIC_ACCESS_HOST`.
+- URLs públicas de UIs (`PROMETHEUS_EXTERNAL_URL`, `GRAFANA_EXTERNAL_URL`, `ALERTMANAGER_EXTERNAL_URL`, `TRAFFIC_SIMULATOR_UI_EXTERNAL_URL`): el script de despliegue las actualiza con metadata EC2 (IPv4 primero) si no fijas `PUBLIC_ACCESS_HOST`. El dashboard Grafana se parchea con [`tools/patch_grafana_public_urls.py`](../tools/patch_grafana_public_urls.py) (enlaces Prometheus, Alertmanager, Test Email y simulador).
 
 #### 4b) Alertmanager con Amazon SES SMTP
 

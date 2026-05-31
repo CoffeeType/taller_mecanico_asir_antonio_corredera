@@ -48,6 +48,15 @@ _bootstrap_lib_local_path() {
   return 1
 }
 
+_bootstrap_curl_github_raw() {
+  local url="$1" dest="$2"
+  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    curl -fSsL -H "Authorization: Bearer ${GITHUB_TOKEN}" "$url" -o "$dest" 2>/dev/null
+    return $?
+  fi
+  curl -fSsL "$url" -o "$dest" 2>/dev/null
+}
+
 load_bootstrap_lib() {
   local rel_path="$1"
   local lib tmp u prev
@@ -64,7 +73,7 @@ load_bootstrap_lib() {
     [[ "$u" == "$prev" ]] && continue
     prev="$u"
     tmp="$(mktemp)"
-    if curl -fSsL "$u" -o "$tmp" 2>/dev/null; then
+    if _bootstrap_curl_github_raw "$u" "$tmp"; then
       # shellcheck source=/dev/null
       source "$tmp"
       rm -f "$tmp"
@@ -72,6 +81,7 @@ load_bootstrap_lib() {
     fi
     rm -f "$tmp"
   done
-  echo "ERROR: no se pudo cargar ${rel_path} (ruta local ni curl GitHub)." >&2
+  echo "ERROR: no se pudo cargar ${rel_path} (checkout local, git clone o curl GitHub)." >&2
+  echo "ERROR: Si el repo es privado, clona antes con REPO_URL=https://<token>@github.com/org/repo.git o exporta GITHUB_TOKEN en user data." >&2
   return 1
 }

@@ -105,17 +105,19 @@ GRAFANA_PORT=3000
 .\scripts\start-jmeter-ui.ps1
 ```
 
-Este script arranca Docker Desktop si hace falta, crea `.env` desde `.env.example` si no existe, construye/levanta `web`, `mysql`, `traffic-simulator`, `traffic-simulator-ui`, espera la salud de la UI y abre el navegador en `TRAFFIC_SIMULATOR_UI_PORT`.
+Este script arranca Docker Desktop si hace falta, crea `.env` desde `.env.example` si no existe, construye/levanta `web`, `mysql`, `traffic-simulator`, `traffic-simulator-ui`, espera la salud de la UI y abre el navegador en `TRAFFIC_SIMULATOR_UI_HOST_PORT`.
 
 **En Linux/Mac/Windows (PowerShell/CMD):**
 ```bash
 docker compose up -d
 ```
 
+> **Simulador JMeter (puerto 8890):** los servicios `traffic-simulator` y `traffic-simulator-ui` usan el perfil Compose `traffic`. No arrancan con un `up` a secas salvo que en `.env` tengas `COMPOSE_PROFILES=traffic` (viene en `.env.example`) o ejecutes `docker compose --profile traffic up -d`.
+
 Este comando:
 - Construye la imagen de la aplicación PHP
 - Descarga las imágenes necesarias (MySQL, Prometheus, Grafana, etc.)
-- Crea y inicia todos los contenedores
+- Crea e inicia los contenedores del compose (incluido el simulador si `COMPOSE_PROFILES` incluye `traffic`)
 - Inicializa la base de datos automáticamente (solo la primera vez, cuando el volumen `mysql_data` está vacío)
 
 > **Nota sobre cambios de esquema:** si ya tenías el volumen `mysql_data` creado y actualizas `database/database.sql`, MySQL **no** re-ejecuta el script de init. El contenedor `web` ejecuta una migración idempotente al arrancar (`scripts/update_schema_v2.php`) para añadir columnas nuevas como `calle`, `codigo_postal`, `ciudad` y `provincia`.
@@ -188,7 +190,7 @@ docker ps
 ### 7. Traffic Simulator + UI (opcional — perfil `traffic`)
 - **Worker/imagen:** `docker/traffic-simulator/Dockerfile` — Apache JMeter CLI + API HTTP interna `:8085` (no publicada por defecto).
 - **UI/imagen:** `docker/traffic-simulator-ui/Dockerfile` — Apache + PHP (`api.php` hace proxy con token server-side).
-- **Puertos host:** típicamente **`TRAFFIC_SIMULATOR_UI_PORT` (8890)** → `:80` en la UI; el API de control `--8085` permanece sólo dentro de Docker.
+- **Puertos host:** **`TRAFFIC_SIMULATOR_UI_HOST_PORT` (8890)** y **`MONITORING_UI_HOST_BIND`** (misma convención que AWS; definición en `compose/traffic-services.yml`); el API de control `:8085` permanece sólo dentro de Docker.
 - **Volumen:** `./logs:/var/www/html/logs` **compartido entre `traffic-simulator`, `traffic-simulator-ui` y `web`**, mismo formato que consume `metrics.php`.
 - **Arranque:** `docker compose --profile traffic up -d`. Variables: `SIMULATOR_CONTROL_TOKEN`, `SIM_BASE_URL`, `SIM_UI_DEFAULT_BASE_URL`, `JMETER_VERSION`, `SIM_JMETER_HEAP`, `SIM_JMETER_HTML_REPORT` (ver [.env.example](../.env.example)). La **UI JMeter** enlaza el dashboard HTML de JMeter cuando termina una ejecución.
 - Documentación: [GUIA_JMETER_USUARIO.md](GUIA_JMETER_USUARIO.md) (operadores); [TRAFFIC_SIMULATOR.md](TRAFFIC_SIMULATOR.md) (técnico).

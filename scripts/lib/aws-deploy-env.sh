@@ -113,8 +113,8 @@ public_browser_host() {
   if [[ -n "$file" && -f "$file" ]]; then
     host="$(read_env_value "$file" PUBLIC_ACCESS_HOST 2>/dev/null || true)"
   fi
-  [[ -n "$host" ]] || host="$(metadata_get public-hostname)"
   [[ -n "$host" ]] || host="$(metadata_get public-ipv4)"
+  [[ -n "$host" ]] || host="$(metadata_get public-hostname)"
   [[ -n "$host" ]] || host="PUBLIC_IP_O_DNS"
   printf '%s' "$host"
 }
@@ -171,5 +171,59 @@ apply_deploy_timeouts_for_memory_budget() {
     : "${TRAFFIC_SMOKE_TIMEOUT_SEC:=180}"
     : "${COMPOSE_UP_WAIT_TIMEOUT:=900}"
     : "${WEB_SMOKE_WAIT_SEC:=360}"
+  fi
+}
+
+# Patch Grafana dashboard JSON (templating URL vars + dashboard links) from .env / EC2 metadata.
+# Args: env_file dashboard_json project_root (directory containing tools/)
+patch_grafana_dashboard_public_urls_file() {
+  local env_file="$1"
+  local dash="$2"
+  local project_root="$3"
+  local host web_port app_base prom_base am_base traffic_base
+  local prometheus_port alertmanager_port traffic_ui_port
+  local patch_py
+
+  [[ -f "$dash" ]] || return 0
+  patch_py="${project_root}/tools/patch_grafana_public_urls.py"
+  [[ -f "$patch_py" ]] || {
+    echo "WARN: no encontrado ${patch_py}; URLs Grafana sin parchear." >&2
+    return 0
+  }
+  command -v python3 >/dev/null 2>&1 || {
+    echo "WARN: python3 no disponible; URLs Grafana sin parchear." >&2
+    return 0
+  }
+
+  host="$(public_browser_host "$env_file")"
+  web_port="$(read_env_value "$env_file" WEB_HOST_PORT 2>/dev/null || true)"
+  web_port="${web_port:-80}"
+  prometheus_port="$(read_env_value "$env_file" PROMETHEUS_HOST_PORT 2>/dev/null || true)"
+  prometheus_port="${prometheus_port:-9090}"
+  alertmanager_port="$(read_env_value "$env_file" ALERTMANAGER_HOST_PORT 2>/dev/null || true)"
+  alertmanager_port="${alertmanager_port:-9093}"
+  traffic_ui_port="$(read_env_value "$env_file" TRAFFIC_SIMULATOR_UI_HOST_PORT 2>/dev/null || true)"
+  traffic_ui_port="${traffic_ui_port:-8890}"
+
+  if [[ "$web_port" == "80" ]]; then
+    app_base="http://${host}"
+  else
+    app_base="http://${host}:${web_port}"
+  fi
+  prom_base="$(read_env_value "$env_file" PROMETHEUS_EXTERNAL_URL 2>/dev/null || true)"
+  [[ -n "$prom_base" ]] || prom_base="http://${host}:${prometheus_port}"
+  am_base="$(read_env_value "$env_file" ALERTMANAGER_EXTERNAL_URL 2>/dev/null || true)"
+  [[ -n "$am_base" ]] || am_base="http://${host}:${alertmanager_port}"
+  traffic_base="$(read_env_value "$env_file" TRAFFIC_SIMULATOR_UI_EXTERNAL_URL 2>/dev/null || true)"
+  [[ -n "$traffic_base" ]] || traffic_base="http://${host}:${traffic_ui_port}"
+
+  if python3 "$patch_py" "$dash" \
+    --app-base "$app_base" \
+    --prom-base "$prom_base" \
+    --alertmanager-base "$am_base" \
+    --traffic-simulator-base "$traffic_base"; then
+    echo "OK: Grafana dashboard URLs: app=${app_base} prom=${prom_base} am=${am_base} sim=${traffic_base}"
+  else
+    echo "WARN: patch_grafana_public_urls.py fallo para ${dash}" >&2
   fi
 }

@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<w:comments xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:cx1="http://schemas.microsoft.com/office/drawing/2015/9/8/chartex" xmlns:cx2="http://schemas.microsoft.com/office/drawing/2015/10/21/chartex" xmlns:cx3="http://schemas.microsoft.com/office/drawing/2016/5/9/chartex" xmlns:cx4="http://schemas.microsoft.com/office/drawing/2016/5/10/chartex" xmlns:cx5="http://schemas.microsoft.com/office/drawing/2016/5/11/chartex" xmlns:cx6="http://schemas.microsoft.com/office/drawing/2016/5/12/chartex" xmlns:cx7="http://schemas.microsoft.com/office/drawing/2016/5/13/chartex" xmlns:cx8="http://schemas.microsoft.com/office/drawing/2016/5/14/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:aink="http://schemas.microsoft.com/office/drawing/2016/ink" xmlns:am3d="http://schemas.microsoft.com/office/drawing/2017/model3d" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:oel="http://schemas.microsoft.com/office/2019/extlst" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16cex="http://schemas.microsoft.com/office/word/2018/wordml/cex" xmlns:w16cid="http://schemas.microsoft.com/office/word/2016/wordml/cid" xmlns:w16="http://schemas.microsoft.com/office/word/2018/wordml" xmlns:w16du="http://schemas.microsoft.com/office/word/2023/wordml/word16du" xmlns:w16sdtdh="http://schemas.microsoft.com/office/word/2020/wordml/sdtdatahash" xmlns:w16sdtfl="http://schemas.microsoft.com/office/word/2024/wordml/sdtformatlock" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" mc:Ignorable="w14 w15 w16se w16cid w16 w16cex w16sdtdh w16sdtfl w16du wp14">
+  <w:comment w:id="15" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-22T11:45:00Z" w:initials="FH">
+    <w:p w14:paraId="2AC49128" w14:textId="77777777" w:rsidR="006C635D" w:rsidRDefault="006C635D" w:rsidP="006C635D">
+      <w:pPr>
+        <w:pStyle w:val="Textocomentario"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rStyle w:val="Refdecomentario"/>
+        </w:rPr>
+        <w:annotationRef/>
+      </w:r>
+      <w:r>
+        <w:t>Entorno de desarrollo</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="16" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-26T12:34:00Z" w:initials="HA">
+    <w:p w14:paraId="21E280B8" w14:textId="1BA520FA" w:rsidR="00000000" w:rsidRDefault="00000000">
+      <w:r>
+        <w:annotationRef/>
+      </w:r>
+      <w:r w:rsidRPr="11F75577">
+        <w:t>esta frase se ha quedado mal</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="17" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-22T11:45:00Z" w:initials="FH">
+    <w:p w14:paraId="18CA266A" w14:textId="77777777" w:rsidR="006C635D" w:rsidRDefault="006C635D" w:rsidP="006C635D">
+      <w:pPr>
+        <w:pStyle w:val="Textocomentario"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rStyle w:val="Refdecomentario"/>
+        </w:rPr>
+        <w:annotationRef/>
+      </w:r>
+      <w:r>
+        <w:t>Produccion, en concreto la nube de AWS</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="18" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-26T12:34:00Z" w:initials="HA">
+    <w:p w14:paraId="3B312A45" w14:textId="33CF80AD" w:rsidR="00000000" w:rsidRDefault="00000000">
+      <w:r>
+        <w:annotationRef/>
+      </w:r>
+      <w:r w:rsidRPr="08CAF6EB">
+        <w:t>revisar</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="19" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-22T11:49:00Z" w:initials="FH">
+    <w:p w14:paraId="253507CD" w14:textId="77777777" w:rsidR="00E1247E" w:rsidRDefault="00E1247E" w:rsidP="00E1247E">
+      <w:pPr>
+        <w:pStyle w:val="Textocomentario"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rStyle w:val="Refdecomentario"/>
+        </w:rPr>
+        <w:annotationRef/>
+      </w:r>
+      <w:r>
+        <w:t>Usuario, gastar un humano en lugar de una caja. Los Logs son ficheros, puedes usar otro tipo que no sea una caja. Estaría bien trazar una estructura que tengan en cuenta donde se encuentra cada aplicación. Usuarios a la izquierda del todo, BD a la derecha del todo</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="21" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-22T11:50:00Z" w:initials="FH">
+    <w:p w14:paraId="024B1B13" w14:textId="77777777" w:rsidR="00874BC8" w:rsidRDefault="00874BC8" w:rsidP="00874BC8">
+      <w:pPr>
+        <w:pStyle w:val="Textocomentario"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rStyle w:val="Refdecomentario"/>
+        </w:rPr>
+        <w:annotationRef/>
+      </w:r>
+      <w:r>
+        <w:t>Te recomiendo no empezar con el nombre de la BD. Mejor una frase explicativa. El modelelado de la base de datos se ha realizado para separar….: Y otra frase más técnica donde ya indiques que lo has hecho en MYSQL y estas cosas. El nombre da igual</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="22" w:author="CORREDERA CUBELLS, ANTONIO" w:date="2026-05-22T18:20:00Z" w:initials="CA">
+    <w:p w14:paraId="7A775FB0" w14:textId="2923EC23" w:rsidR="00000000" w:rsidRDefault="00000000">
+      <w:r>
+        <w:annotationRef/>
+      </w:r>
+      <w:r w:rsidRPr="733015FB">
+        <w:t xml:space="preserve">Que te parece si sustituyo todo el texto por este otro? La base de datos almacena en un modelo relacional la información de usuarios, citas, noticias y consejos del taller. El modeloER separa datos personales y credenciales para no mezclar el perfil y autenticación; las citas admiten usuario registrado o invitado; noticias y consejos referencian al autor administrador por clave foránea. La implementación utiliza MySQL con tablas InnoDB, charset utf8mb4, integridad referencial y acceso vía PDO con consultas </w:t>
+      </w:r>
+      <w:r w:rsidRPr="733015FB">
+        <w:t>parametrizadas.</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="25" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-22T11:53:00Z" w:initials="FH">
+    <w:p w14:paraId="6B44C781" w14:textId="77777777" w:rsidR="003760B9" w:rsidRDefault="003760B9" w:rsidP="003760B9">
+      <w:pPr>
+        <w:pStyle w:val="Textocomentario"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rStyle w:val="Refdecomentario"/>
+        </w:rPr>
+        <w:annotationRef/>
+      </w:r>
+      <w:r>
+        <w:t>Separa en dos redes, una para la aplicaión y otra para la monitorizacion. Hay que decir porque!!</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="26" w:author="CORREDERA CUBELLS, ANTONIO" w:date="2026-05-22T18:30:00Z" w:initials="CA">
+    <w:p w14:paraId="3CBE54EB" w14:textId="42A91A07" w:rsidR="00000000" w:rsidRDefault="00000000">
+      <w:r>
+        <w:annotationRef/>
+      </w:r>
+      <w:r w:rsidRPr="3A42B4A0">
+        <w:t>Revisa este punto haber si asi esta mejor o lo enfoco de otra forma</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="27" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-26T12:35:00Z" w:initials="HA">
+    <w:p w14:paraId="114BE624" w14:textId="317D176F" w:rsidR="00000000" w:rsidRDefault="00000000">
+      <w:r>
+        <w:annotationRef/>
+      </w:r>
+      <w:r w:rsidRPr="0175ECE1">
+        <w:t>hecho</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="30" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-22T11:57:00Z" w:initials="FH">
+    <w:p w14:paraId="329FC3B1" w14:textId="77777777" w:rsidR="006C2B13" w:rsidRDefault="006C2B13" w:rsidP="006C2B13">
+      <w:pPr>
+        <w:pStyle w:val="Textocomentario"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rStyle w:val="Refdecomentario"/>
+        </w:rPr>
+        <w:annotationRef/>
+      </w:r>
+      <w:r>
+        <w:t>Deberias enlazar el respositorio</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="31" w:author="CORREDERA CUBELLS, ANTONIO" w:date="2026-05-22T18:32:00Z" w:initials="CA">
+    <w:p w14:paraId="46A89F16" w14:textId="48002A94" w:rsidR="00000000" w:rsidRDefault="00000000">
+      <w:r>
+        <w:annotationRef/>
+      </w:r>
+      <w:r w:rsidRPr="7212761C">
+        <w:t>Te refieres al repositorio git?</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="32" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-26T12:36:00Z" w:initials="HA">
+    <w:p w14:paraId="2D5DCADA" w14:textId="73640783" w:rsidR="00000000" w:rsidRDefault="00000000">
+      <w:r>
+        <w:annotationRef/>
+      </w:r>
+      <w:r w:rsidRPr="2DDE1AC8">
+        <w:t>si</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="36" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-22T12:05:00Z" w:initials="FH">
+    <w:p w14:paraId="4BA67D2B" w14:textId="77777777" w:rsidR="00EB28FA" w:rsidRDefault="00EB28FA" w:rsidP="00EB28FA">
+      <w:pPr>
+        <w:pStyle w:val="Textocomentario"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rStyle w:val="Refdecomentario"/>
+        </w:rPr>
+        <w:annotationRef/>
+      </w:r>
+      <w:r>
+        <w:t>No llegaste a poner ip elásticas? La IP te cambiará en cada reinicio. Es algo que puedes hacer en 5 minutos</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="38" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-22T12:09:00Z" w:initials="FH">
+    <w:p w14:paraId="5AD2CB82" w14:textId="77777777" w:rsidR="005B315C" w:rsidRDefault="005B315C" w:rsidP="005B315C">
+      <w:pPr>
+        <w:pStyle w:val="Textocomentario"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rStyle w:val="Refdecomentario"/>
+        </w:rPr>
+        <w:annotationRef/>
+      </w:r>
+      <w:r>
+        <w:t>Hay que validar que el despliegue haya terinado, que los contenedores este vivos, y las reglas. En caso contrario los aplicativos como Grafana o Prometeus pueden no estar disponibles</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="41" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-22T12:13:00Z" w:initials="FH">
+    <w:p w14:paraId="6154B2D5" w14:textId="77777777" w:rsidR="00661F1D" w:rsidRDefault="008D232E" w:rsidP="00661F1D">
+      <w:pPr>
+        <w:pStyle w:val="Textocomentario"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rStyle w:val="Refdecomentario"/>
+        </w:rPr>
+        <w:annotationRef/>
+      </w:r>
+      <w:r w:rsidR="00661F1D">
+        <w:t>Se ha desplegado una utilidad para realizar simulaciones en la propia infraestructura, en la red correspondiente</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="42" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-22T12:13:00Z" w:initials="FH">
+    <w:p w14:paraId="2F90FB04" w14:textId="38DB14B9" w:rsidR="00B311BD" w:rsidRDefault="00B311BD" w:rsidP="00B311BD">
+      <w:pPr>
+        <w:pStyle w:val="Textocomentario"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rStyle w:val="Refdecomentario"/>
+        </w:rPr>
+        <w:annotationRef/>
+      </w:r>
+      <w:r>
+        <w:t>Explicar porqué haces esto</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+  <w:comment w:id="54" w:author="HUESO PASTOR, FRANCISCO ALFONSO" w:date="2026-05-22T12:20:00Z" w:initials="FH">
+    <w:p w14:paraId="46B02116" w14:textId="77777777" w:rsidR="00114CFD" w:rsidRDefault="00114CFD" w:rsidP="00114CFD">
+      <w:pPr>
+        <w:pStyle w:val="Textocomentario"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rStyle w:val="Refdecomentario"/>
+        </w:rPr>
+        <w:annotationRef/>
+      </w:r>
+      <w:r>
+        <w:t>De las nuevas versiones de la aplicación</w:t>
+      </w:r>
+    </w:p>
+  </w:comment>
+</w:comments>

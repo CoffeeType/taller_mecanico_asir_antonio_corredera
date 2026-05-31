@@ -1,0 +1,40 @@
+{
+    "title": "fixture",
+    "templating": {
+        "list": [
+            {
+                "name": "prometheus_base",
+                "type": "textbox",
+                "label": "Prometheus (URL base)",
+                "query": "http://localhost:9090",
+                "hide": 0,
+                "current": {"selected": true, "text": "http://localhost:9090", "value": "http://localhost:9090"}
+            },
+            {
+                "name": "taller_app_base",
+                "type": "textbox",
+                "label": "App PHP (URL base)",
+                "query": "http://localhost:8081",
+                "hide": 0,
+                "current": {"selected": true, "text": "http://localhost:8081", "value": "http://localhost:8081"}
+            }
+        ]
+    },
+    "links": [
+        {
+            "title": "Prometheus",
+            "url": "${prometheus_base}",
+            "type": "link"
+        },
+        {
+            "title": "Test Email (Alertas)",
+            "url": "${taller_app_base}/admin/test-alert-email.php",
+            "type": "link"
+        },
+        {
+            "title": "Documentación",
+            "url": "https://github.com/example/docs",
+            "type": "link"
+        }
+    ]
+}

@@ -68,8 +68,18 @@ AWS_METADATA_MOCK_DIR="$(mktemp -d)"
 trap 'rm -f "$TMP_ENV"; rm -rf "$AWS_METADATA_MOCK_DIR"' EXIT
 printf 'mock-token' >"${AWS_METADATA_MOCK_DIR}/token"
 printf 'ec2-mock.example.com' >"${AWS_METADATA_MOCK_DIR}/public-hostname"
+printf '203.0.113.10' >"${AWS_METADATA_MOCK_DIR}/public-ipv4"
 host="$(public_browser_host "$TMP_ENV")"
-assert_eq "public_browser_host uses metadata mock" "ec2-mock.example.com" "$host"
+assert_eq "public_browser_host prefers public-ipv4 over hostname" "203.0.113.10" "$host"
+
+printf 'ec2-only.example.com' >"${AWS_METADATA_MOCK_DIR}/public-hostname"
+rm -f "${AWS_METADATA_MOCK_DIR}/public-ipv4"
+host="$(public_browser_host "$TMP_ENV")"
+assert_eq "public_browser_host falls back to hostname when no ipv4" "ec2-only.example.com" "$host"
+
+set_env_value "$TMP_ENV" PUBLIC_ACCESS_HOST "custom.example.org"
+host="$(public_browser_host "$TMP_ENV")"
+assert_eq "PUBLIC_ACCESS_HOST overrides metadata" "custom.example.org" "$host"
 
 rm -rf "$AWS_METADATA_MOCK_DIR"
 AWS_METADATA_MOCK_DIR=""

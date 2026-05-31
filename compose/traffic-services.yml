@@ -1,0 +1,80 @@
+# Servicios compartidos: simulador JMeter (worker + UI).
+# Incluido desde docker-compose.yml (local) y docker-compose.aws.yml (EC2).
+# Perfil Compose: traffic (activar con COMPOSE_PROFILES=traffic o --profile traffic).
+# Build context debe ser .. (raiz del repo): en includes, context: . resuelve a compose/.
+
+services:
+  traffic-simulator:
+    build:
+      context: ..
+      dockerfile: docker/traffic-simulator/Dockerfile
+      args:
+        JMETER_VERSION: ${JMETER_VERSION:-5.6.3}
+    profiles:
+      - traffic
+    cpus: "${TRAFFIC_SIMULATOR_CPUS:-0.35}"
+    mem_limit: "${TRAFFIC_SIMULATOR_MEM_LIMIT:-512m}"
+    memswap_limit: "${TRAFFIC_SIMULATOR_MEMSWAP_LIMIT:-768m}"
+    environment:
+      - SIM_BASE_URL=${SIM_BASE_URL:-http://web}
+      - SIM_LOG_DIR=/var/www/html/logs
+      - SIMULATOR_CONTROL_TOKEN=${SIMULATOR_CONTROL_TOKEN:-changeme_traffic_sim_secret}
+      - SIMULATOR_CONTROL_PORT=8085
+      - SIM_ROUTES_FILE=${SIM_ROUTES_FILE:-}
+      - SIM_JMETER_BIN=${SIM_JMETER_BIN:-/opt/apache-jmeter/bin/jmeter}
+      - SIM_JMETER_WORK_DIR=${SIM_JMETER_WORK_DIR:-/var/www/html/logs/jmeter}
+      - SIM_JMETER_HEAP=${SIM_JMETER_HEAP:--Xms128m -Xmx256m -XX:MaxMetaspaceSize=128m}
+      - SIM_JMETER_HTML_REPORT=${SIM_JMETER_HTML_REPORT:-true}
+      - SIM_EXTERNAL_TARGETS_ENABLED=${SIM_EXTERNAL_TARGETS_ENABLED:-true}
+      - SIM_REQUIRE_EXTERNAL_CONFIRMATION=${SIM_REQUIRE_EXTERNAL_CONFIRMATION:-true}
+      - SIM_INTERNAL_HOSTS=${SIM_INTERNAL_HOSTS:-web,localhost,127.0.0.1,::1,mysql,host.docker.internal}
+      - SIM_ALLOW_PRIVATE_TARGETS=${SIM_ALLOW_PRIVATE_TARGETS:-false}
+      - SIM_SSL_VERIFY=${SIM_SSL_VERIFY:-true}
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:8085/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  traffic-simulator-ui:
+    build:
+      context: ..
+      dockerfile: docker/traffic-simulator-ui/Dockerfile
+    profiles:
+      - traffic
+    cpus: "${TRAFFIC_SIMULATOR_UI_CPUS:-0.10}"
+    mem_limit: "${TRAFFIC_SIMULATOR_UI_MEM_LIMIT:-128m}"
+    memswap_limit: "${TRAFFIC_SIMULATOR_UI_MEMSWAP_LIMIT:-192m}"
+    ports:
+      - "${MONITORING_UI_HOST_BIND:-0.0.0.0}:${TRAFFIC_SIMULATOR_UI_HOST_PORT:-8890}:80"
+    environment:
+      - SIMULATOR_CONTAINER_URL=http://traffic-simulator:8085
+      - SIMULATOR_CONTROL_TOKEN=${SIMULATOR_CONTROL_TOKEN:-changeme_traffic_sim_secret}
+      - SIM_LOG_DIR=/var/www/html/logs
+      - SIM_UI_DEFAULT_BASE_URL=${SIM_UI_DEFAULT_BASE_URL:-http://web}
+      - SIM_UI_PUBLIC_APP_URL=${SIM_UI_PUBLIC_APP_URL:-}
+      - PROMETHEUS_EXTERNAL_URL=${PROMETHEUS_EXTERNAL_URL:-http://127.0.0.1:9090}
+      - GRAFANA_EXTERNAL_URL=${GRAFANA_EXTERNAL_URL:-http://127.0.0.1:3000}
+      - ALERTMANAGER_EXTERNAL_URL=${ALERTMANAGER_EXTERNAL_URL:-http://127.0.0.1:9093}
+      - TZ=${TZ:-UTC}
+      - SIM_EXTERNAL_TARGETS_ENABLED=${SIM_EXTERNAL_TARGETS_ENABLED:-true}
+      - SIM_REQUIRE_EXTERNAL_CONFIRMATION=${SIM_REQUIRE_EXTERNAL_CONFIRMATION:-true}
+      - SIM_INTERNAL_HOSTS=${SIM_INTERNAL_HOSTS:-web,localhost,127.0.0.1,::1,mysql,host.docker.internal}
+      - SIM_ALLOW_PRIVATE_TARGETS=${SIM_ALLOW_PRIVATE_TARGETS:-false}
+      - SIM_SSL_VERIFY=${SIM_SSL_VERIFY:-true}
+    networks:
+      - app-network
+    depends_on:
+      traffic-simulator:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/health.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s

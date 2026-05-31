@@ -1,0 +1,17 @@
+flowchart TB
+  usuarios(("Usuarios y operador"))
+  web["Apache + PHP"]
+  mysql[("MySQL")]
+  metrics["metrics.php"]
+  logs["Ficheros de log"]
+  prom["Prometheus"]
+  graf["Grafana"]
+  alert["Alertmanager"]
+
+  usuarios --> web
+  web --> mysql
+  web --> metrics
+  logs --> prom
+  metrics --> prom
+  prom --> graf
+  prom --> alert

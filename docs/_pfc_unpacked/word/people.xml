@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<w15:people xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" mc:Ignorable="w15">
+  
+  
+  <w15:person w15:author="HUESO PASTOR, FRANCISCO ALFONSO">
+    
+    
+    <w15:presenceInfo w15:providerId="AD" w15:userId="S::fa.huesopastor@edu.gva.es::cf5c83fb-995d-4a31-a601-a533753b0ff3"/>
+    
+  
+  </w15:person>
+  
+  
+  <w15:person w15:author="CORREDERA CUBELLS, ANTONIO">
+    
+    
+    <w15:presenceInfo w15:providerId="AD" w15:userId="S::antcorcub@alu.edu.gva.es::e05b2504-6832-4b37-8ede-4696931d112a"/>
+    
+  
+  </w15:person>
+  
+  
+  <w15:person w15:author="CORREDERA CUBELLS, ANTONIO">
+    
+    
+    <w15:presenceInfo w15:providerId="AD" w15:userId="S::antcorcub@alu.edu.gva.es::e05b2504-6832-4b37-8ede-4696931d112a"/>
+    
+  
+  </w15:person>
+  
+
+</w15:people>

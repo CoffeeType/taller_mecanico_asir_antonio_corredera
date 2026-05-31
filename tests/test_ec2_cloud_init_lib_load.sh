@@ -66,6 +66,17 @@ else
   FAILS=$((FAILS + 1))
 fi
 
+# --- bootstrap script wires lib load before install_progreso_docker ---
+_bs="${ROOT}/scripts/ec2-user-data-bootstrap.sh"
+if ! grep -q '_source_bootstrap_libs' "$_bs"; then
+  echo "FAIL: ec2-user-data-bootstrap.sh must call _source_bootstrap_libs"
+  FAILS=$((FAILS + 1))
+fi
+if ! awk '/_source_bootstrap_libs/{s=1} s&&/install_progreso_docker/{found=1; exit} END{exit !found}' "$_bs"; then
+  echo "FAIL: install_progreso_docker must appear after _source_bootstrap_libs in bootstrap"
+  FAILS=$((FAILS + 1))
+fi
+
 if [[ "$FAILS" -gt 0 ]]; then
   echo "${FAILS} test(s) failed"
   exit 1

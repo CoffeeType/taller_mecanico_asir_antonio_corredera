@@ -613,6 +613,7 @@ async function poll() {
         if (data.monitoring) {
             addLink(data.monitoring.prometheus, 'Prometheus', 'bi-graph-up');
             addLink(data.monitoring.grafana, 'Grafana (dashboard)', 'bi-display', 'btn-outline-primary');
+            addLink(data.monitoring.alertmanager, 'Alertmanager', 'bi-bell', 'btn-outline-warning');
         }
         if (data.jmeter && data.jmeter.enabled) {
             if (data.jmeter.report_url && data.jmeter.report_ready) {

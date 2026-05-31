@@ -29,7 +29,7 @@ Push-Location $RepoRoot
 try {
     Write-Host "`n=== verify_local (repo: $RepoRoot) ===`n" -ForegroundColor Cyan
 
-    # 1) docker compose config
+    # 1) docker compose config (base + perfil traffic)
     Info "docker compose config"
     docker compose config --quiet 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) {
@@ -37,6 +37,45 @@ try {
         Fail "docker compose config"
     } else {
         Pass "docker compose config"
+    }
+
+    Info "docker compose config --profile traffic"
+    docker compose --profile traffic config --quiet 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        docker compose --profile traffic config 2>&1 | Out-Host
+        Fail "docker compose config --profile traffic"
+    } else {
+        Pass "docker compose config --profile traffic"
+    }
+
+    Info "test_compose_traffic_parity.py"
+    python (Join-Path $RepoRoot "tests/test_compose_traffic_parity.py") 2>&1 | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+        Fail "test_compose_traffic_parity.py"
+    } else {
+        Pass "test_compose_traffic_parity.py"
+    }
+
+    $bashExe = $null
+    foreach ($candidate in @(
+            (Join-Path ${env:ProgramFiles} "Git\bin\bash.exe"),
+            (Join-Path ${env:ProgramFiles(x86)} "Git\bin\bash.exe")
+        )) {
+        if ($candidate -and (Test-Path $candidate)) {
+            $bashExe = $candidate
+            break
+        }
+    }
+    if ($bashExe) {
+        Info "test_compose_traffic_preflight.sh"
+        & $bashExe -c "cd '$(($RepoRoot -replace '\\', '/'))' && bash tests/test_compose_traffic_preflight.sh" 2>&1 | Out-Host
+        if ($LASTEXITCODE -ne 0) {
+            Fail "test_compose_traffic_preflight.sh"
+        } else {
+            Pass "test_compose_traffic_preflight.sh"
+        }
+    } else {
+        Warn "Git Bash no encontrado; omito test_compose_traffic_preflight.sh"
     }
 
     # 2) Grafana JSON
@@ -161,7 +200,7 @@ try {
                 if ($LASTEXITCODE -eq 0) {
                     Pass $ht.Label
                 } else {
-                    Warn "$($ht.Label) fallido (revisa API en $base)"
+                    Fail "$($ht.Label) (revisa API en $base)"
                 }
             }
             $httpTestsRan = $true

@@ -14,3 +14,9 @@ datasources:
       queryTimeout: "60s"
     secureJsonData: {}
     version: 1
+  - name: TestData
+    uid: testdata
+    type: grafana-testdata-datasource
+    access: proxy
+    isDefault: false
+    editable: false

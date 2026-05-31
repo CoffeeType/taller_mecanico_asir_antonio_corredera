@@ -30,7 +30,7 @@ Esta guía está pensada para **operadores nuevos** que van a lanzar su primera 
 | Entorno | Comando o acción | URL por defecto |
 |---------|------------------|-----------------|
 | **Windows** | `.\scripts\start-jmeter-ui.ps1` o doble clic en `start-jmeter-ui.bat` | http://localhost:8890 |
-| **Linux / macOS** | `cp .env.example .env` → `docker compose --profile traffic up -d` | Mismo puerto (`TRAFFIC_SIMULATOR_UI_PORT`) |
+| **Linux / macOS** | `cp .env.example .env` → `docker compose up -d` (con `COMPOSE_PROFILES=traffic` en `.env`) | `TRAFFIC_SIMULATOR_UI_HOST_PORT` (8890) |
 | **AWS EC2** | Tras el bootstrap o `./scripts/deploy_aws_docker.sh` (ver [AWS_DOCKER_DEPLOYMENT.md](AWS_DOCKER_DEPLOYMENT.md)) | `TRAFFIC_SIMULATOR_UI_EXTERNAL_URL` o `http://IP_PUBLICA:8890` |
 
 **Comprobar que la UI responde:** abre `…/health.php` en el puerto de la UI (8890 por defecto). Debe devolver JSON con `"status":"ok"`.
@@ -41,7 +41,7 @@ En Docker local, el script de Windows también levanta `web` y `mysql` para que 
 
 | Concepto | En local (`docker-compose.yml`) | En EC2 (`docker-compose.aws.yml`) |
 |----------|--------------------------------|-------------------------------------|
-| Puerto publicado de la UI | `TRAFFIC_SIMULATOR_UI_PORT` | `TRAFFIC_SIMULATOR_UI_HOST_PORT` (mismo valor por defecto **8890**) |
+| Puerto publicado de la UI | `TRAFFIC_SIMULATOR_UI_HOST_PORT` | `TRAFFIC_SIMULATOR_UI_HOST_PORT` (8890 por defecto) |
 | URL pre-rellenada en la UI | `SIM_UI_DEFAULT_BASE_URL=http://web` | Igual: **`http://web`** (carga interna al servicio `web` en la red Docker) |
 | URL impresa al desplegar | — | `TRAFFIC_SIMULATOR_UI_EXTERNAL_URL` (la rellenan `deploy_aws_docker.sh` y el bootstrap con la IP/DNS pública) |
 | Security Group | No aplica | Abre **8890** solo desde tu IP/CIDR (`MONITORING_SG_CIDR`, p. ej. `TU_IP/32`) |
@@ -192,8 +192,8 @@ Copia `.env.example` a `.env` antes del primer arranque. Tabla de variables que 
 | Variable | Para qué sirve | Primer uso |
 |----------|----------------|------------|
 | `SIMULATOR_CONTROL_TOKEN` | Secreto entre la UI y el worker; impide que alguien lance pruebas sin autorización | **Cámbiala** en producción (no dejes el valor de ejemplo). |
-| `TRAFFIC_SIMULATOR_UI_PORT` | Puerto publicado de la UI en el host (local) | 8890 por defecto |
-| `TRAFFIC_SIMULATOR_UI_HOST_PORT` | Igual en AWS (`docker-compose.aws.yml`) | 8890 por defecto |
+| `TRAFFIC_SIMULATOR_UI_HOST_PORT` | Puerto publicado de la UI en el host (local y AWS) | 8890 por defecto |
+| `MONITORING_UI_HOST_BIND` | Interfaz de enlace del puerto (p. ej. `0.0.0.0`) | `0.0.0.0` |
 | `SIM_UI_DEFAULT_BASE_URL` | URL pre-rellenada (preset Docker interno) | `http://web` |
 | `SIM_UI_PUBLIC_APP_URL` | Preset «App pública» en la UI (EC2: la fija el deploy) | `http://IP_PUBLICA` (puerto 80 por defecto) |
 | `SIM_BASE_URL` | URL por defecto si el worker no recibe otra en la petición | `http://web` |

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<coreProperties xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
+  <dc:title>Implantación y monitorización de un sistema web para la gestión de un taller mecánico</dc:title>
+  <dc:creator>Antonio Corredera Cubells</dc:creator>
+  <dc:description>Memoria del Proyecto Final de Ciclo ASIR</dc:description>
+  <lastModifiedBy>CORREDERA CUBELLS, ANTONIO</lastModifiedBy>
+  <revision>130</revision>
+  <dcterms:created xsi:type="dcterms:W3CDTF">2026-05-01T16:49:00.0000000Z</dcterms:created>
+  <dcterms:modified xsi:type="dcterms:W3CDTF">2026-05-22T17:11:01.2536344Z</dcterms:modified>
+</coreProperties>

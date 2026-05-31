@@ -13,9 +13,12 @@ function booking_api_base(): string
 /** @return array{fecha:string, hora:string} */
 function booking_unique_slot(): array
 {
-    $dayOffset = (int) (microtime(true) * 1000) % 28 + 1;
+    static $seq = 0;
+    $seq++;
+    $entropy = random_int(0, PHP_INT_MAX) ^ (int) (microtime(true) * 1_000_000) ^ getmypid() ^ $seq;
+    $dayOffset = ($entropy % 27) + 1;
+    $slotHour = 9 + ($entropy % 8);
     $fecha = date('Y-m-d', strtotime("+{$dayOffset} days", strtotime('2099-01-01')));
-    $slotHour = 9 + ((int) (microtime(true) * 1000) % 8);
 
     return [
         'fecha' => $fecha,

@@ -1,8 +1,4 @@
 #!/bin/bash
-# EC2 user data (Amazon Linux 2023). Paste as plain text in Advanced details -> User data.
-# Log: /var/log/taller-ec2-bootstrap.log | Guide: docs/AWS_DOCKER_DEPLOYMENT.md
-# Optional: REPO_URL, GIT_REF, SKIP_TRAFFIC_SMOKE, SWAP_SIZE_GB
-# Paso 6 carga scripts/lib/docker-bootstrap-plugins.sh (misma carpeta que este script o curl raw desde GitHub).
 
 if ! exec > >(tee /var/log/taller-ec2-bootstrap.log) 2>&1; then
   exec >>/var/log/taller-ec2-bootstrap.log 2>&1
@@ -162,34 +158,57 @@ authorize_public_ui_ingress() {
 
 REPO_URL="${REPO_URL:-https://github.com/CoffeeType/taller_mecanico_asir.git}"
 GIT_REF="${GIT_REF:-main}"
+BOOT_USER="ec2-user"
+TARGET_DIR="/opt/taller_mecanico_asir"
 
-# cloud-init solo copia part-001; scripts/lib/ se resuelve en checkout local o curl raw (ver bootstrap-lib-loader.sh).
 BOOTSTRAP_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -f "${BOOTSTRAP_SCRIPT_DIR}/lib/bootstrap-lib-loader.sh" ]]; then
-  # shellcheck source=lib/bootstrap-lib-loader.sh
-  source "${BOOTSTRAP_SCRIPT_DIR}/lib/bootstrap-lib-loader.sh"
-else
+
+bootstrap_early_clone_repo() {
+  install -d -o "${BOOT_USER}" -g "${BOOT_USER}" "${TARGET_DIR}"
+  if [[ -d "${TARGET_DIR}/.git" ]]; then
+    echo "OK: repositorio ya presente en ${TARGET_DIR}"
+    return 0
+  fi
+  retry 5 20 runuser -u "${BOOT_USER}" -- git clone --depth 1 --branch "${GIT_REF}" "${REPO_URL}" "${TARGET_DIR}"
+}
+
+_source_bootstrap_libs() {
+  local loader="" _bl_tmp _bl_base _bl_raw
+  for loader in \
+    "${BOOTSTRAP_SCRIPT_DIR}/lib/bootstrap-lib-loader.sh" \
+    "${TARGET_DIR}/scripts/lib/bootstrap-lib-loader.sh"; do
+    if [[ -f "$loader" ]]; then
+      source "$loader"
+      echo "OK: bootstrap-lib-loader desde ${loader}"
+      return 0
+    fi
+  done
   _bl_tmp="$(mktemp)"
   _bl_base="${REPO_URL%.git}"
   _bl_raw="https://raw.githubusercontent.com/${_bl_base#https://github.com/}/${GIT_REF}/scripts/lib/bootstrap-lib-loader.sh"
-  if ! curl -fSsL "$_bl_raw" -o "$_bl_tmp" 2>/dev/null; then
-    if ! curl -fSsL "https://raw.githubusercontent.com/CoffeeType/taller_mecanico_asir/${GIT_REF}/scripts/lib/bootstrap-lib-loader.sh" -o "$_bl_tmp" 2>/dev/null; then
-      echo "ERROR: no se pudo descargar scripts/lib/bootstrap-lib-loader.sh (rama ${GIT_REF}). Haz push al remoto o incluye scripts/lib/ junto al user data." >&2
+  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    if curl -fSsL -H "Authorization: Bearer ${GITHUB_TOKEN}" "$_bl_raw" -o "$_bl_tmp" 2>/dev/null; then
+      source "$_bl_tmp"
       rm -f "$_bl_tmp"
-      exit 1
+      echo "OK: bootstrap-lib-loader via raw.githubusercontent.com (GITHUB_TOKEN)"
+      return 0
     fi
+  elif curl -fSsL "$_bl_raw" -o "$_bl_tmp" 2>/dev/null; then
+    source "$_bl_tmp"
+    rm -f "$_bl_tmp"
+    echo "OK: bootstrap-lib-loader via raw.githubusercontent.com"
+    return 0
   fi
-  # shellcheck source=/dev/null
-  source "$_bl_tmp"
   rm -f "$_bl_tmp"
-fi
+  echo "ERROR: no se pudo cargar scripts/lib/bootstrap-lib-loader.sh." >&2
+  echo "ERROR: Repos privados: exporta GITHUB_TOKEN o REPO_URL=https://<token>@github.com/org/repo.git (git clone en paso 3b)." >&2
+  echo "ERROR: Repos publicos: haz push de scripts/lib/ a la rama ${GIT_REF} en GitHub." >&2
+  return 1
+}
 
 _load_docker_bootstrap_plugins_lib() {
   load_bootstrap_lib "scripts/lib/docker-bootstrap-plugins.sh" || exit 1
 }
-
-BOOT_USER="ec2-user"
-TARGET_DIR="/opt/taller_mecanico_asir"
 
 install_resource_guard() {
   install -m 0755 "${TARGET_DIR}/scripts/taller-docker-safe-mode.sh" /usr/local/sbin/taller-docker-safe-mode
@@ -212,8 +231,6 @@ EOF
   systemctl enable taller-docker-safe-mode.service
 }
 
-load_bootstrap_lib "scripts/lib/install-progreso-docker.fn.sh" || exit 1
-
 DOCKER_COMPOSE_VERSION="${DOCKER_COMPOSE_VERSION:-latest}"
 DOCKER_BUILDX_VERSION="${DOCKER_BUILDX_VERSION:-v0.19.3}"
 
@@ -227,6 +244,10 @@ bootstrap_msg "Paso 3/9 - paquetes base (git, httpd, ec2-instance-connect, awscl
 retry 5 10 dnf install -y ec2-instance-connect git httpd
 retry 3 10 dnf install -y awscli || true
 systemctl disable --now httpd || true
+
+_source_bootstrap_libs || exit 1
+bootstrap_early_clone_repo || true
+load_bootstrap_lib "scripts/lib/install-progreso-docker.fn.sh" || exit 1
 
 bootstrap_msg "Paso 4/9 - motor Docker (dnf install docker si falta) y arranque del servicio"
 if ! command -v docker >/dev/null 2>&1; then
@@ -290,7 +311,6 @@ if [[ ! -d "${TARGET_DIR}/.git" ]]; then
   retry 5 20 runuser -u "${BOOT_USER}" -- git clone --depth 1 --branch "${GIT_REF}" "${REPO_URL}" "${TARGET_DIR}"
 fi
 
-# shellcheck source=lib/aws-deploy-env.sh
 source "${TARGET_DIR}/scripts/lib/aws-deploy-env.sh"
 
 if [[ ! -f "${TARGET_DIR}/.env" ]]; then
@@ -298,13 +318,19 @@ if [[ ! -f "${TARGET_DIR}/.env" ]]; then
 fi
 seed_env_secrets "${TARGET_DIR}/.env"
 normalize_env_defaults "${TARGET_DIR}/.env"
+_profiles="$(read_env_value "${TARGET_DIR}/.env" COMPOSE_PROFILES 2>/dev/null || true)"
+if [[ "${_profiles}" == *monitoring* ]]; then
+  patch_grafana_dashboard_public_urls_file \
+    "${TARGET_DIR}/.env" \
+    "${TARGET_DIR}/monitoring/grafana/dashboards/taller-mecanico-dashboard.json" \
+    "${TARGET_DIR}"
+fi
 chown "${BOOT_USER}:${BOOT_USER}" "${TARGET_DIR}/.env"
 chmod 600 "${TARGET_DIR}/.env"
 authorize_public_ui_ingress "${TARGET_DIR}/.env"
 
 install_resource_guard
 
-# Comando progreso_docker (ver log de bootstrap en vivo).
 if [[ -f "${TARGET_DIR}/scripts/progreso_docker.sh" ]]; then
   install_progreso_docker "${TARGET_DIR}/scripts/progreso_docker.sh"
 else
@@ -324,6 +350,17 @@ export SKIP_TRAFFIC_SMOKE="${SKIP_TRAFFIC_SMOKE:-1}"
 
 deploy_hook_fail() {
   echo "ERROR: deploy_aws_docker.sh failed; extra diagnostics:" >&2
+  if ! docker compose --env-file .env -f docker-compose.aws.yml config >/dev/null 2>&1; then
+    echo "--- compose config (errors) ---" >&2
+    docker compose --env-file .env -f docker-compose.aws.yml config 2>&1 | tail -40 >&2 || true
+  fi
+  local profiles
+  profiles="$(grep -E '^COMPOSE_PROFILES=' .env 2>/dev/null | head -1 | cut -d= -f2- || true)"
+  if [[ ",${profiles},," == *",traffic,"* && -f scripts/lib/compose-traffic-preflight.fn.sh ]]; then
+    source scripts/lib/compose-traffic-preflight.fn.sh
+    assert_traffic_build_context "${TARGET_DIR}" docker-compose.aws.yml --env-file .env \
+      || true
+  fi
   docker compose --env-file .env -f docker-compose.aws.yml ps -a || true
   local s
   while read -r s; do

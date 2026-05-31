@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    actor Cliente
+    participant Nav as Navegador
+    participant API as ApiChat
+    participant DB as MySQL
+
+    Cliente->>Nav: Selecciona fecha y hora
+    Nav->>API: GET booked slots
+    API->>DB: Consulta citas del mes
+    DB-->>API: Franjas ocupadas
+    API-->>Nav: JSON disponibilidad
+    Nav->>API: POST nueva reserva
+    API->>DB: INSERT en citas
+    DB-->>API: OK
+    API-->>Nav: Confirmación
+    Nav-->>Cliente: Pantalla confirmación

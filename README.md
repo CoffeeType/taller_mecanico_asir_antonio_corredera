@@ -639,7 +639,7 @@ El proyecto incluye un sistema completo de monitorización con Prometheus y Graf
 | Servicio | URL | Puerto | Credenciales |
 |----------|-----|--------|--------------|
 | **Aplicación Web** | http://localhost:8081 | 8081 (`WEB_PORT`) | admin / admin123 |
-| **UI JMeter (pruebas de carga)** | http://localhost:8890 | 8890 (`TRAFFIC_SIMULATOR_UI_PORT`; `docker compose --profile traffic`; token en `.env`) | — |
+| **UI JMeter (pruebas de carga)** | http://localhost:8890 | 8890 (`TRAFFIC_SIMULATOR_UI_HOST_PORT`; perfil `traffic` / `COMPOSE_PROFILES`; token en `.env`) | — |
 | **Grafana** | http://localhost:3000 | 3000 | admin / admin123 |
 | **Prometheus** | http://localhost:9090 | 9090 | Sin autenticación |
 | **MySQL** | localhost:3306 | 3306 | root / rootpassword |

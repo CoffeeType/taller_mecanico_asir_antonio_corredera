@@ -164,6 +164,46 @@ smoke_alertmanager_ui() {
   echo "OK: Alertmanager UI root (localhost:${am_port})"
 }
 
+smoke_grafana_dashboard_public_links() {
+  local host dash
+  host="$(public_browser_host)"
+  dash="${PROJECT_DIR}/monitoring/grafana/dashboards/taller-mecanico-dashboard.json"
+  [[ -f "$dash" ]] || return 0
+  if grep -qF "http://${host}" "$dash" 2>/dev/null; then
+    echo "OK: dashboard Grafana incluye host publico ${host}"
+    return 0
+  fi
+  echo "WARN: dashboard JSON sin host ${host}; ejecuta patch_grafana_public_urls.py" >&2
+}
+
+smoke_test_alert_email_url() {
+  local web_port url code
+  web_port="$(read_env_var WEB_HOST_PORT 80)"
+  if [[ "$web_port" == "80" ]]; then
+    url="http://127.0.0.1/admin/test-alert-email.php"
+  else
+    url="http://127.0.0.1:${web_port}/admin/test-alert-email.php"
+  fi
+  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 -L "$url" 2>/dev/null || true)"
+  case "$code" in
+    200|301|302)
+      echo "OK: test-alert-email.php HTTP ${code} (admin o redireccion login)"
+      ;;
+    *)
+      echo "WARN: test-alert-email.php HTTP ${code:-?} en ${url}" >&2
+      ;;
+  esac
+}
+
+recreate_public_url_services() {
+  local svcs=()
+  [[ "$WANT_MONITORING" == "1" ]] && svcs+=(grafana)
+  [[ "$WANT_TRAFFIC" == "1" ]] && svcs+=(traffic-simulator-ui)
+  [[ ${#svcs[@]} -eq 0 ]] && return 0
+  echo "Recreando servicios con URLs publicas: ${svcs[*]}"
+  compose up -d --force-recreate "${svcs[@]}"
+}
+
 traffic_simulator_log_count() {
   compose exec -T traffic-simulator sh -lc 'f="${SIM_LOG_DIR:-/var/www/html/logs}/metrics.log"; if [ -f "$f" ]; then grep -c "source=simulator" "$f" 2>/dev/null || true; else printf "0"; fi' | tr -dc '0-9'
 }
@@ -237,71 +277,13 @@ print_jmeter_operator_guide() {
   fi
 }
 
-# Valores por defecto del dashboard Grafana (textbox taller_app_base / prometheus_base) alineados con metadata EC2 / PUBLIC_ACCESS_HOST.
+# Valores por defecto del dashboard Grafana alineados con metadata EC2 / PUBLIC_ACCESS_HOST.
 patch_grafana_dashboard_public_urls() {
   [[ "$WANT_MONITORING" != "1" ]] && return 0
-  local host web_port app_base prom_base dash tmp
-  dash="${PROJECT_DIR}/monitoring/grafana/dashboards/taller-mecanico-dashboard.json"
-  [[ -f "$dash" ]] || {
-    echo "WARN: dashboard JSON no encontrado: $dash" >&2
-    return 0
-  }
-
-  host="$(public_browser_host)"
-  web_port="$(read_env_var WEB_HOST_PORT 80)"
-  if [[ "$web_port" == "80" ]]; then
-    app_base="http://${host}"
-  else
-    app_base="http://${host}:${web_port}"
-  fi
-  prom_base="$(read_env_var PROMETHEUS_EXTERNAL_URL "")"
-  if [[ -z "$prom_base" ]]; then
-    prom_base="http://${host}:$(read_env_var PROMETHEUS_HOST_PORT 9090)"
-  fi
-
-  if command -v python3 >/dev/null 2>&1; then
-    APP_BASE_JSON="$app_base" PROM_BASE_JSON="$prom_base" python3 - "$dash" <<'PY'
-import json, os, sys
-
-path = sys.argv[1]
-app = os.environ["APP_BASE_JSON"]
-prom = os.environ["PROM_BASE_JSON"]
-with open(path, encoding="utf-8") as f:
-    d = json.load(f)
-changed = False
-for item in d.get("templating", {}).get("list", []):
-    name = item.get("name")
-    if name == "taller_app_base":
-        item["query"] = app
-        item["current"] = {"selected": True, "text": app, "value": app}
-        changed = True
-    elif name == "prometheus_base":
-        item["query"] = prom
-        item["current"] = {"selected": True, "text": prom, "value": prom}
-        changed = True
-if not changed:
-    sys.exit(0)
-with open(path, "w", encoding="utf-8") as f:
-    json.dump(d, f, indent=4, ensure_ascii=False)
-    f.write("\n")
-PY
-    echo "OK: Grafana dashboard URLs (python3): app=${app_base} prom=${prom_base}"
-    return 0
-  fi
-
-  if command -v jq >/dev/null 2>&1; then
-    tmp="$(mktemp)"
-    jq --arg app "$app_base" --arg prom "$prom_base" \
-      '.templating.list |= map(
-        if .name == "taller_app_base" then . * {query: $app, current: {selected: true, text: $app, value: $app}}
-        elif .name == "prometheus_base" then . * {query: $prom, current: {selected: true, text: $prom, value: $prom}}
-        else . end)' \
-      "$dash" >"$tmp" && mv "$tmp" "$dash"
-    echo "OK: Grafana dashboard URLs (jq): app=${app_base} prom=${prom_base}"
-    return 0
-  fi
-
-  echo "WARN: sin python3 ni jq; no se actualizaron URLs del dashboard Grafana." >&2
+  patch_grafana_dashboard_public_urls_file \
+    "${AWS_DEPLOY_ENV_FILE:-${PROJECT_DIR}/.env}" \
+    "${PROJECT_DIR}/monitoring/grafana/dashboards/taller-mecanico-dashboard.json" \
+    "${PROJECT_DIR}"
 }
 
 # Pin si no hay .env / API (debe coincidir con docker-compose.aws.yml :-${CADVISOR_IMAGE_TAG:-...}).
@@ -510,10 +492,20 @@ if [[ "${DEPLOY_PREFLIGHT_ONLY:-0}" != "1" && "$SKIP_SECRET_STRICT_CHECK" != "1"
   fi
 fi
 
+preflight_traffic_compose() {
+  [[ "$WANT_TRAFFIC" == "1" ]] || return 0
+  # shellcheck source=lib/compose-traffic-preflight.fn.sh
+  source "${SCRIPT_DIR}/lib/compose-traffic-preflight.fn.sh"
+  assert_traffic_build_context "$PROJECT_DIR" "$COMPOSE_FILE" "${COMPOSE_ENV_ARGS[@]}"
+}
+
 preflight_paths=(
+  "compose/traffic-services.yml"
   "database/database.sql"
   "scripts/print-jmeter-usage.sh"
   "scripts/run_jmeter_traffic.php"
+  "docker/traffic-simulator/Dockerfile"
+  "docker/traffic-simulator-ui/Dockerfile"
   "docker/traffic-simulator/assets/jmeter-report-custom.css"
   "monitoring/prometheus/prometheus.aws.yml"
   "monitoring/prometheus/alerts.yml"
@@ -555,6 +547,7 @@ fi
 
 echo "Compose config (validacion)..."
 compose config >/dev/null
+preflight_traffic_compose
 
 if [[ "${DEPLOY_PREFLIGHT_ONLY:-0}" == "1" ]]; then
   echo "OK: preflight completado (DEPLOY_PREFLIGHT_ONLY=1; sin build/up/pull)."
@@ -599,6 +592,8 @@ elif echo "$UP_HELP" | grep -qE '[[:space:]]--wait[[:space:]]'; then
 else
   compose up -d --remove-orphans
 fi
+
+recreate_public_url_services
 
 echo "Estado:"
 compose ps -a
@@ -678,6 +673,8 @@ if [[ "$WANT_MONITORING" == "1" ]]; then
   curl -sf "http://127.0.0.1:${ALERTMANAGER_HOST_PORT}/-/healthy" >/dev/null || { echo "ERROR: Alertmanager no healthy" >&2; exit 1; }
   echo "OK: Alertmanager healthy (localhost)"
   smoke_alertmanager_ui "$ALERTMANAGER_HOST_PORT" "$WEB_HOST_PORT" || exit 1
+  smoke_grafana_dashboard_public_links
+  smoke_test_alert_email_url
   assert_public_port_bind grafana 3000 "$GRAFANA_HOST_PORT"
   assert_public_port_bind prometheus 9090 "$PROMETHEUS_HOST_PORT"
   assert_public_port_bind alertmanager 9093 "$ALERTMANAGER_HOST_PORT"
